@@ -10,67 +10,54 @@ const port = process.env.PORT || 4000;
 app.use(cors());
 app.use(bodyParser.json());
 
-app.post('/submit', async (req, res) => {
-  const { regoNumber } = req.body;
+let browser;
+
+// Initialize the browser when the server starts
+(async () => {
+  browser = await puppeteer.launch({ headless: true });
+})();
+
+app.get('/check-registration', async (req, res) => {
+  const { regoNumber } = req.query;
+
+  if (!regoNumber) {
+    return res.status(400).json({ error: 'Missing regoNumber query parameter' });
+  }
 
   try {
-    const browser = await puppeteer.launch({ headless: true });
     const page = await browser.newPage();
     await page.setUserAgent('Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36');
 
-    await page.goto('https://www.vicroads.vic.gov.au/registration/buy-sell-or-transfer-a-vehicle/check-vehicle-registration/vehicle-registration-enquiry');
-    
-    // await page.screenshot({ path: '1.png', fullPage: true });
-    await page.waitForSelector('#VehicleType', { visible: true });
+    await page.goto('https://www.vicroads.vic.gov.au/registration/buy-sell-or-transfer-a-vehicle/check-vehicle-registration/vehicle-registration-enquiry', { waitUntil: 'domcontentloaded' });
+
     await page.select('#VehicleType', 'car');
     await page.type('#RegistrationNumbercar', regoNumber);
 
-    // Wait for the button to appear
-    await page.waitForSelector('.mvc-form__actions-btn');
-
-    // Click the button
     await page.click('.mvc-form__actions-btn');
     
-    // Wait for the results to load and get the content
-    // Wait for the registration information to appear
     await page.waitForSelector('.vhr-panel__list');
 
-  // Extract the registration information
     const registrationInfo = await page.evaluate(() => {
-    const registrationNumber = document.querySelectorAll('.vhr-panel__list-item--description')[0].innerText;
-    const registrationStatus = document.querySelectorAll('.vhr-panel__list-item--description')[1].innerText
-    const registrationSerialNumber = document.querySelectorAll('.vhr-panel__list-item--description')[2].innerText;
-    const year = document.querySelectorAll('.vhr-panel__list-item--description')[3].innerText;
-    const make = document.querySelectorAll('.vhr-panel__list-item--description')[4].innerText;
-    const bodyType = document.querySelectorAll('.vhr-panel__list-item--description')[5].innerText;
-    const colour = document.querySelectorAll('.vhr-panel__list-item--description')[6].innerText;
-    const vinChassis = document.querySelectorAll('.vhr-panel__list-item--description')[7].innerText;
-    const engineNumber = document.querySelectorAll('.vhr-panel__list-item--description')[8].innerText;
-    const compliancePlate = document.querySelectorAll('.vhr-panel__list-item--description')[9].innerText;
-    const sanctionsApplicable = document.querySelectorAll('.vhr-panel__list-item--description')[10].innerText;
-    const goodsCarryingVehicle = document.querySelectorAll('.vhr-panel__list-item--description')[11].innerText;
-    const transferInDispute = document.querySelectorAll('.vhr-panel__list-item--description')[12].innerText;
+      const getTextContent = (index) => document.querySelectorAll('.vhr-panel__list-item--description')[index]?.innerText || '';
+      
+      return {
+        registrationNumber: getTextContent(0),
+        registrationStatus: getTextContent(1),
+        // registrationSerialNumber: getTextContent(2),
+        year: getTextContent(3),
+        make: getTextContent(4),
+        bodyType: getTextContent(5),
+        colour: getTextContent(6),
+        // vinChassis: getTextContent(7),
+        // engineNumber: getTextContent(8),
+        compliancePlate: getTextContent(9),
+        sanctionsApplicable: getTextContent(10),
+        // goodsCarryingVehicle: getTextContent(11),
+        transferInDispute: getTextContent(12),
+      };
+    });
 
-    return {
-      registrationNumber,
-      registrationStatus,
-      registrationSerialNumber,
-      year,
-      make,
-      bodyType,
-      colour,
-      vinChassis,
-      engineNumber,
-      compliancePlate,
-      sanctionsApplicable,
-      goodsCarryingVehicle,
-      transferInDispute
-    };
-  });
-
-  console.log('Registration Information:', registrationInfo);
-
-    // await browser.close();
+    await page.close();
 
     res.json({ registrationInfo });
   } catch (error) {
@@ -78,7 +65,13 @@ app.post('/submit', async (req, res) => {
   }
 });
 
+// Gracefully close the browser when the server is stopped
+process.on('exit', async () => {
+  if (browser) {
+    await browser.close();
+  }
+});
+
 app.listen(port, () => {
   console.log(`Server is running on http://localhost:${port}`);
 });
-
