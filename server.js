@@ -16,22 +16,21 @@ app.post('/submit', async (req, res) => {
   try {
     const browser = await puppeteer.launch({ headless: true });
     const page = await browser.newPage();
-    await page.setUserAgent('5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/69.0.3497.100 Safari/537.36');
+    await page.setUserAgent('Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36');
 
     await page.goto('https://www.vicroads.vic.gov.au/registration/buy-sell-or-transfer-a-vehicle/check-vehicle-registration/vehicle-registration-enquiry');
     
-    await page.screenshot({ path: 'full_page_screenshot.png', fullPage: true });
+    // await page.screenshot({ path: '1.png', fullPage: true });
     await page.waitForSelector('#VehicleType', { visible: true });
     await page.select('#VehicleType', 'car');
     await page.type('#RegistrationNumbercar', regoNumber);
-  
+
     // Wait for the button to appear
     await page.waitForSelector('.mvc-form__actions-btn');
 
     // Click the button
     await page.click('.mvc-form__actions-btn');
-    // await page.click('#submit-button'); // Update this selector to the actual button's selector
-
+    
     // Wait for the results to load and get the content
     // Wait for the registration information to appear
     await page.waitForSelector('.vhr-panel__list');
