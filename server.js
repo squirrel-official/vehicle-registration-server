@@ -60,7 +60,7 @@ app.get('/check-registration', async (req, res) => {
     await page.close();
 
     res.json({ registrationInfo });
-  } catch (error) {
+      } catch (error) {
     res.status(500).json({ error: error.message });
   }
 });
