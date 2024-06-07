@@ -3,74 +3,66 @@ const express = require('express');
 const bodyParser = require('body-parser');
 const puppeteer = require('puppeteer');
 const cors = require('cors');
-
+const UserAgent = require('user-agents');
 const app = express();
 const port = process.env.PORT || 4000;
 
 app.use(cors());
 app.use(bodyParser.json());
 
-let browser;
-
-// Initialize the browser when the server starts
-(async () => {
-  browser = await puppeteer.launch({ headless: true });
-})();
-
 app.get('/check-registration', async (req, res) => {
+  let browser = await puppeteer.launch({ headless: false });
   const { regoNumber } = req.query;
 
   if (!regoNumber) {
     return res.status(400).json({ error: 'Missing regoNumber query parameter' });
   }
 
+  let page;
   try {
-    const page = await browser.newPage();
-    await page.setUserAgent('Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36');
+    page = await browser.newPage();
+    // Generate a random user agent
+    const userAgent = new UserAgent();
+    await page.setUserAgent(userAgent.toString());
 
-    await page.goto('https://www.vicroads.vic.gov.au/registration/buy-sell-or-transfer-a-vehicle/check-vehicle-registration/vehicle-registration-enquiry', { waitUntil: 'domcontentloaded' });
+    await page.goto('https://service.vic.gov.au/find-services/transport-and-driving/registration/check-registration/vehicle', { waitUntil: 'domcontentloaded' });
 
-    await page.select('#VehicleType', 'car');
-    await page.type('#RegistrationNumbercar', regoNumber);
+    await page.type('#rego-number', regoNumber);
+    await page.click('button.cta');
 
-    await page.click('.mvc-form__actions-btn');
-    
-    await page.waitForSelector('.vhr-panel__list');
+     // Wait for 3 seconds (3000 milliseconds)
+    await page.evaluate(() => {
+      return new Promise(resolve => {
+        setTimeout(resolve, 3000);
+      });
+    });
+
 
     const registrationInfo = await page.evaluate(() => {
-      const getTextContent = (index) => document.querySelectorAll('.vhr-panel__list-item--description')[index]?.innerText || '';
-      
-      return {
-        registrationNumber: getTextContent(0),
-        registrationStatus: getTextContent(1),
-        // registrationSerialNumber: getTextContent(2),
-        year: getTextContent(3),
-        make: getTextContent(4),
-        bodyType: getTextContent(5),
-        colour: getTextContent(6),
-        // vinChassis: getTextContent(7),
-        // engineNumber: getTextContent(8),
-        compliancePlate: getTextContent(9),
-        sanctionsApplicable: getTextContent(10),
-        // goodsCarryingVehicle: getTextContent(11),
-        transferInDispute: getTextContent(12),
-      };
+      const info = {};
+      const reviewList = document.querySelector('.review-list');
+  
+      reviewList.querySelectorAll('li').forEach(li => {
+        const label = li.querySelector('label').textContent.trim();
+        const value = li.querySelector('._value').textContent.trim();
+
+        // Select only specific labels
+        if (label === 'Make' || label === 'Body' || label === 'Registration' || label === 'Colour' || label === 'Expiry' || label === 'Sanction(s) applicable' || label === 'Transfer in dispute') {
+          info[label] = value;
+      }
+      });
+  
+      return info;
     });
 
     await page.close();
 
     res.json({ registrationInfo });
-      } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'An error occurred while fetching registration details.' });
+  }})
 
-// Gracefully close the browser when the server is stopped
-process.on('exit', async () => {
-  if (browser) {
-    await browser.close();
-  }
-});
 
 app.listen(port, () => {
   console.log(`Server is running on http://localhost:${port}`);
