@@ -11,7 +11,7 @@ app.use(cors());
 app.use(bodyParser.json());
 
 app.get('/check-registration', async (req, res) => {
-  let browser = await puppeteer.launch({ headless: false });
+  let browser = await puppeteer.launch({ headless: true });
   const { regoNumber } = req.query;
 
   if (!regoNumber) {
@@ -29,14 +29,14 @@ app.get('/check-registration', async (req, res) => {
 
     await page.type('#rego-number', regoNumber);
     await page.click('button.cta');
-
      // Wait for 3 seconds (3000 milliseconds)
     await page.evaluate(() => {
       return new Promise(resolve => {
-        setTimeout(resolve, 3000);
+        setTimeout(resolve, 5000);
       });
     });
 
+    await page.screenshot({path: 'screenshot.jpg', fullPage: true });
 
     const registrationInfo = await page.evaluate(() => {
       const info = {};
