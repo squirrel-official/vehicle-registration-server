@@ -21,7 +21,8 @@ let browser;
 })();
 
 app.get('/check-registration', async (req, res) => {
-  
+
+  console.log('Received request :'+ req);
   const { regoNumber } = req.query;
 
   if (!regoNumber) {
