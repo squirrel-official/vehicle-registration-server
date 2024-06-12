@@ -21,12 +21,10 @@ let browser;
 })();
 
 app.get('/check-registration', async (req, res) => {
-  console.time('Execution Time');
   
   const { regoNumber } = req.query;
 
   if (!regoNumber) {
-    console.timeEnd('Execution Time');
     return res.status(400).json({ error: 'Missing regoNumber query parameter' });
   }
 
@@ -44,14 +42,6 @@ app.get('/check-registration', async (req, res) => {
 
     await page.type('#RegistrationNumbercar', regoNumber);
 
-    // Generate a timestamped filename for the screenshot
-    // const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-    // const screenshotPath = `screenshot-${timestamp}.jpg`;
-
-    // Take a screenshot before interacting with the page
-    // await page.screenshot({ path: screenshotPath, fullPage: true });
-      
-   // Wait for the "Search" button to be clickable and then click it
    await page.click('.mvc-form__actions-btn[value="Search"]');
     
 
@@ -72,11 +62,10 @@ app.get('/check-registration', async (req, res) => {
 
     await page.close();
 
-    console.timeEnd('Execution Time');
+
     res.json({ registrationInfo, screenshotPath });
   } catch (error) {
     console.error(error);
-    console.timeEnd('Execution Time');
     res.status(500).json({ error: 'An error occurred while fetching registration details.' });
     // if (page) await page.close();
   }
