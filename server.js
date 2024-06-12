@@ -44,7 +44,6 @@ app.get('/check-registration', async (req, res) => {
 
    await page.click('.mvc-form__actions-btn[value="Search"]');
     
-
     await page.waitForSelector('.vhr-panel__list-item--description', { timeout: 5000 });
 
     const registrationInfo = await page.evaluate(() => {
@@ -63,7 +62,7 @@ app.get('/check-registration', async (req, res) => {
     await page.close();
 
 
-    res.json({ registrationInfo, screenshotPath });
+    res.json({ registrationInfo });
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: 'An error occurred while fetching registration details.' });
