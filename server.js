@@ -11,6 +11,7 @@ app.use(cors());
 app.use(bodyParser.json());
 puppeteer.use(StealthPlugin());
 
+let requestCount = 0;
 let browser;
 
 (async () => {
@@ -21,8 +22,8 @@ let browser;
 })();
 
 app.get('/check-registration', async (req, res) => {
-
-  console.log('Received request :'+ JSON.stringify(req));
+  requestCount++;
+  console.log('Received request number : '+ requestCount);
   const { regoNumber } = req.query;
 
   if (!regoNumber) {
